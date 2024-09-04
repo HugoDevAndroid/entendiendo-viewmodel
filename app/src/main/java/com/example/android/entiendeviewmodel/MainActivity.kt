@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -32,6 +33,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.android.entiendeviewmodel.ui.theme.EntendiendoViewModelTheme
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,14 +50,19 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+data class AppUiState(
+    val menuIcon: Boolean = false
+)
+
 class AppViewModel: ViewModel() {
-    var acceso by mutableStateOf(false)
-        private set
+    private val _uiState = MutableStateFlow(AppUiState())
+    val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
 
-    fun cambiarAcceso() {
-        acceso = !acceso
+    fun mostrarMenuIcon(mostrar: Boolean) {
+        _uiState.update { estadoActual ->
+            estadoActual.copy(menuIcon = mostrar)
+        }
     }
-
 }
 
 @Composable
@@ -60,8 +70,10 @@ fun MyScaffold(
     modifier: Modifier = Modifier,
     appViewModel: AppViewModel = viewModel(),
 ) {
+    val usoUiState by appViewModel.uiState.collectAsState()
+
     Scaffold(
-        topBar = { TopBarApp(mostrar = appViewModel.acceso) }
+        topBar = { TopBarApp(mostrar = usoUiState.menuIcon) }
     ) { innerPadding ->
         Column(
             modifier = modifier
@@ -75,7 +87,7 @@ fun MyScaffold(
                 fontSize = 24.sp
             )
             Button(
-                onClick = { appViewModel.cambiarAcceso() }
+                onClick = { appViewModel.mostrarMenuIcon(!usoUiState.menuIcon) }
             ) {
                 Text(text = "Mostrar menú")
             }
